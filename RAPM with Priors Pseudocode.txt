@@ -1,0 +1,80 @@
+# Pseudocode description of RAPM with priors
+# Daniel Myers, 4/22/16
+
+	LOAD csv containing all plays, including lineups on the court, last 15 years
+	
+	LABELS:
+	game_id,date_game,play_id,quarter,time_elapsed_game,time_elapsed_play,player1_id,player2_id,player3_id,play_code,play_type,visitor_team_id,home_team_id,focus_team_id,other_team_id,visitor_lineup,home_lineup,fg_dist,visitor_score,home_score,play_pts
+
+	
+### Basic Variables Needed	
+	
+	ADD Column: possession end (0 or 1) - defensive rebound, turnover, made shot...
+	
+	IF substitution was made prior to a FT, count the FT as with prior lineup (copy lineup up)
+	
+	
+	
+	
+### Win Probability (used for garbage time estimation)	
+	
+	ADD Column: home team win or loss
+	PLOT home team win vs. time left and score margin
+	MODEL Win Probability for home team as a function of time left and score margin (will be nonlinear)
+	PREDICT win probability for all plays in the database and store
+
+### Develop the cleaned matchup file
+
+	CREATE 
+		Matchup IDs: 10 man groups in a given season
+		Specific Stint IDs: 10 man groups in series
+		
+	SUMMARIZE csv, collapsing by specific stint
+		Score at beginnning
+		Score at end
+		Score margin at beginning
+		Score margin at end
+		Possessions home team was on O
+		Possessions home team was on D
+		Time in game at beginning
+		Time in game at end
+		Win Probability at beginning
+		Win Probability at end
+		# Data to include with this summarize
+		Home Team
+		Away Team
+		Players on court
+		
+	ADD Columns:
+		Offensive Rating for stint (if Poss>0)
+		Defensive Rating for stint (if Poss>0)
+		
+### Compile Prior
+
+# Use %Non-Garbage Possessions
+
+	USING Base PbP File w/Win Prob estimates
+	
+	REMOVE all columns except team, possessions, Win Probability
+	
+	FILTER for Win Probability between 5% and 95%
+	
+	SUMMARIZE by team, Season
+		Team Possessions
+		Count number of unique games played in
+	
+	UNPACK the 10 players in the lineups - Make 10 rows w/ 1 ID from each row
+	
+	SUMMARIZE by player ID, Season
+		Possessions
+		Count number of unique games played in
+
+	MULTIPLY %Poss by TeamGm/PlayerGm if %Poss is greater than 25%
+		# This assumes the player was hurt for the other games
+	
+	STORE this Player ID and %Poss table for later use
+	
+	
+	
+	
+	
