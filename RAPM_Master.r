@@ -40,4 +40,60 @@ matchup_base %<>% filter(!(play_code %in% play_code_filter)) %>%
 
 
 
+###  Summarize Play Codes and Types ####
+
+play_code_summary <- group_by(matchup_base,play_code,play_type) %>%
+  summarise (
+    number = length(play_id)
+  )
+
+###  Assign Possession End Plays ####
+
+ball_ownership_play <- c("tov",
+                         "fg2","fg3","ft","fg2x","fg3x","ft","orb","drb")
+
+
+
+play_code_play_end <- c("tov","period_end")
+ft_play_end <- c("FREE_THROW_1_OF_1",
+                 "FREE_THROW_2_OF_2",
+                 "FREE_THROW_3_OF_3")
+
+matchup_base$poss_end <- 0
+matchup_base$poss_end[matchup_base$play_code=="tov"] <- 1
+matchup_base$poss_end[matchup_base$play_code=="period_end"] <- 1
+matchup_base$poss_end[lead(matchup_base$play_code=="drb")] <- 1
+matchup_base$poss_end[matchup_base$play_code=="ft" &
+                        matchup_base$play_type %in% "FREE_THROW_1_OF_1"] <- 1
+matchup_base$poss_end[matchup_base$play_code=="ft" &
+                        matchup_base$play_type=="FREE_THROW_2_OF_2"] <- 1
+matchup_base$poss_end[matchup_base$play_code=="ft" &
+                        matchup_base$play_type=="FREE_THROW_3_OF_3"] <- 1
+
+
+###  Overall Game Data ####
+
+# Assign win probability as 1, 0, or 0.5 (if it went to overtime)
+
+game_data <- group_by(matchup_base,game_id) %>%
+  summarise (
+    date_game = first(date_game),
+    visitor_team_id = first(visitor_team_id),
+    home_team_id = first(home_team_id),
+    max_time = max(time_elapsed_game),
+    minutes = max_time/600,
+    quarters = max(quarter),
+    visitor_final_score = max(visitor_score),
+    home_final_score = max(home_score),
+    visitor_win = if (quarters > 4) {
+      0.5} else if (visitor_final_score > home_final_score) {
+        1} else {
+          0},
+    home_win = 1-visitor_win
+  )
+
+
+
+
+
 
