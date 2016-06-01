@@ -49,8 +49,39 @@ play_code_summary <- group_by(matchup_base,play_code,play_type) %>%
 
 ###  Assign Possession End Plays ####
 
-ball_ownership_play <- c("tov",
-                         "fg2","fg3","ft","fg2x","fg3x","ft","orb","drb")
+focus_has_ball_play_code <- c("drb",
+                         "fg2",
+                         "fg2x",
+                         "fg3",
+                         "fg3x",
+                         "ft",
+                         "ftx",
+                         "orb",
+                         "tov"
+                         )     #These codes indicate focus team has ball
+
+
+focus_has_ball_play_type <- c("OFFENSIVE_CHARGE_FOUL",
+                             "OFFENSIVE_FOUL"
+                              )   #These types indicate focus team has ball
+
+
+focus_not_ball_play_type <- c("CLEAR_PATH_FOUL",
+                              "DEF_3_SEC_TECH_FOUL",
+                              "INBOUND_FOUL",
+                              "PERSONAL_BLOCK_FOUL",
+                              "PERSONAL_FOUL",
+                              "PERSONAL_TAKE_FOUL",
+                              "SHOOTING_BLOCK_FOUL",
+                              "SHOOTING_FOUL",
+                              "DEF_GOALTENDING_VIOLATION",
+                              "KICKED_BALL_VIOLATION",
+                              "LANE_VIOLATION"
+                              )   #These types indicate focus team does not have ball
+
+
+
+
 
 
 
