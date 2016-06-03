@@ -27,7 +27,7 @@ headers <- c("game_id","date_game","play_id","quarter",
 
 # Single regular season PbP file
 matchup_base <- read.csv(unz("Data/pbp2016reg2.zip","pbp2016reg2.csv"),
-                         header = F, na.strings = "\\N")
+                         header = F, na.strings = "\\N", stringsAsFactors = F)
 
 names(matchup_base) <- headers
 
@@ -80,9 +80,14 @@ focus_not_ball_play_type <- c("CLEAR_PATH_FOUL",
                               )   #These types indicate focus team does not have ball
 
 
+matchup_base$has_ball[matchup_base$play_code %in% focus_has_ball_play_code] <-
+  matchup_base$focus_team_id[matchup_base$play_code %in% focus_has_ball_play_code]
 
+matchup_base$has_ball[matchup_base$play_type %in% focus_has_ball_play_type] <-
+  matchup_base$focus_team_id[matchup_base$play_type %in% focus_has_ball_play_type]
 
-
+matchup_base$has_ball[matchup_base$play_type %in% focus_not_ball_play_type] <-
+  matchup_base$other_team_id[matchup_base$play_type %in% focus_not_ball_play_type]
 
 
 play_code_play_end <- c("tov","period_end")
