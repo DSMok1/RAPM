@@ -1,7 +1,8 @@
 # My folders to ignore
 Backups
 Development
-Data
+
+pbp*.zip
 
 # WINDOWS GITIGNORE
 
