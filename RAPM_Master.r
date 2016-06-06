@@ -25,9 +25,13 @@ headers <- c("game_id","date_game","play_id","quarter",
              "fg_dist","visitor_score","home_score","play_pts"
 )
 
-# Single regular season PbP file
-matchup_base <- read.csv(unz("Data/pbp2016reg2.zip","pbp2016reg2.csv"),
-                         header = F, na.strings = "\\N", stringsAsFactors = F)
+# Single regular season PbP file (Add support for multiple later)
+# matchup_base <- read.csv(unz("Data/pbp2016reg2.zip","pbp2016reg2.csv"),
+#                         header = F, na.strings = "\\N", stringsAsFactors = F)
+
+# Sample PbP file (for faster prototyping)
+matchup_base <- read.csv(gzfile("Data/Sample_PbP.csv.gz"),
+                         na.strings = "NA", stringsAsFactors = F)
 
 names(matchup_base) <- headers
 
@@ -88,6 +92,8 @@ matchup_base$has_ball[matchup_base$play_type %in% focus_has_ball_play_type] <-
 
 matchup_base$has_ball[matchup_base$play_type %in% focus_not_ball_play_type] <-
   matchup_base$other_team_id[matchup_base$play_type %in% focus_not_ball_play_type]
+
+
 
 
 play_code_play_end <- c("tov","period_end")
