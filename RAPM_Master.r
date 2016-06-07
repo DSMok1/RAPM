@@ -53,7 +53,7 @@ play_code_summary <- group_by(matchup_base,play_code,play_type) %>%
 
 ###  Assign Possession End Plays ####
 
-focus_has_ball_play_code <- c("drb",
+has_ball_focus_play_code <- c("drb",
                          "fg2",
                          "fg2x",
                          "fg3",
@@ -65,12 +65,12 @@ focus_has_ball_play_code <- c("drb",
                          )     #These codes indicate focus team has ball
 
 
-focus_has_ball_play_type <- c("OFFENSIVE_CHARGE_FOUL",
+has_ball_focus_play_type <- c("OFFENSIVE_CHARGE_FOUL",
                              "OFFENSIVE_FOUL"
                               )   #These types indicate focus team has ball
 
 
-focus_not_ball_play_type <- c("CLEAR_PATH_FOUL",
+has_ball_other_tm_play_type <- c("CLEAR_PATH_FOUL",
                               "DEF_3_SEC_TECH_FOUL",
                               "INBOUND_FOUL",
                               "PERSONAL_BLOCK_FOUL",
@@ -83,34 +83,57 @@ focus_not_ball_play_type <- c("CLEAR_PATH_FOUL",
                               "LANE_VIOLATION"
                               )   #These types indicate focus team does not have ball
 
+has_ball_next_play_code <- c("jump_ball",
+                             "period_start"
+                             )  #  whoever has the ball on next play should have here
 
-matchup_base$has_ball[matchup_base$play_code %in% focus_has_ball_play_code] <-
-  matchup_base$focus_team_id[matchup_base$play_code %in% focus_has_ball_play_code]
+has_ball_prev_play_code <- c("period_end")
+  #  whoever has the ball on previous play should have here
 
-matchup_base$has_ball[matchup_base$play_type %in% focus_has_ball_play_type] <-
-  matchup_base$focus_team_id[matchup_base$play_type %in% focus_has_ball_play_type]
+has_ball_next_play_type <- c("JUMP_BALL_VIOLATION")
+  #  whoever has the ball on next play should have here
 
-matchup_base$has_ball[matchup_base$play_type %in% focus_not_ball_play_type] <-
-  matchup_base$other_team_id[matchup_base$play_type %in% focus_not_ball_play_type]
+has_ball_prev_play_type <- c("AWAY_FROM_PLAY_FOUL",
+                             "FLAGRANT_FOUL_TYPE_1",
+                             "FOUL",
+                             "LOOSE_BALL_FOUL",
+                             "TECHNICAL_FOUL",
+                             "DELAY_OF_GAME_VIOLATION",
+                             "DOUBLE_LANE_VIOLATION"
+                             ) #  whoever has the ball on previous play should have here
 
 
+# These three sets define who has the ball on almost every play
+
+matchup_base$has_ball[matchup_base$play_code %in% has_ball_focus_play_code] <-
+  matchup_base$focus_team_id[matchup_base$play_code %in% has_ball_focus_play_code]
+
+matchup_base$has_ball[matchup_base$play_type %in% has_ball_focus_play_type] <-
+  matchup_base$focus_team_id[matchup_base$play_type %in% has_ball_focus_play_type]
+
+matchup_base$has_ball[matchup_base$play_type %in% has_ball_other_tm_play_type] <-
+  matchup_base$other_team_id[matchup_base$play_type %in% has_ball_other_tm_play_type]
 
 
-play_code_play_end <- c("tov","period_end")
-ft_play_end <- c("FREE_THROW_1_OF_1",
-                 "FREE_THROW_2_OF_2",
-                 "FREE_THROW_3_OF_3")
+# These four sets define who has the ball based on who has it
+# on the next or previous play (Iterate 5 times)
 
-matchup_base$poss_end <- 0
-matchup_base$poss_end[matchup_base$play_code=="tov"] <- 1
-matchup_base$poss_end[matchup_base$play_code=="period_end"] <- 1
-matchup_base$poss_end[lead(matchup_base$play_code=="drb")] <- 1
-matchup_base$poss_end[matchup_base$play_code=="ft" &
-                        matchup_base$play_type %in% "FREE_THROW_1_OF_1"] <- 1
-matchup_base$poss_end[matchup_base$play_code=="ft" &
-                        matchup_base$play_type=="FREE_THROW_2_OF_2"] <- 1
-matchup_base$poss_end[matchup_base$play_code=="ft" &
-                        matchup_base$play_type=="FREE_THROW_3_OF_3"] <- 1
+for (i in 1:5) {
+matchup_base$has_ball[matchup_base$play_code %in% has_ball_next_play_code] <-
+  matchup_base$has_ball[lag(matchup_base$play_code %in% has_ball_next_play_code, n=1, default = FALSE)]
+
+matchup_base$has_ball[matchup_base$play_type %in% has_ball_next_play_type] <-
+  matchup_base$has_ball[lag(matchup_base$play_type %in% has_ball_next_play_type, n=1, default = FALSE)]
+
+matchup_base$has_ball[matchup_base$play_code %in% has_ball_prev_play_code] <-
+  matchup_base$has_ball[lead(matchup_base$play_code %in% has_ball_prev_play_code, n=1, default = FALSE)]
+
+matchup_base$has_ball[matchup_base$play_type %in% has_ball_prev_play_type] <-
+  matchup_base$has_ball[lead(matchup_base$play_type %in% has_ball_prev_play_type, n=1, default = FALSE)]
+}
+
+NAs <- matchup_base[is.na(matchup_base$has_ball),]
+
 
 
 ###  Overall Game Data ####
