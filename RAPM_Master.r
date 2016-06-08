@@ -26,12 +26,12 @@ headers <- c("game_id","date_game","play_id","quarter",
 )
 
 # Single regular season PbP file (Add support for multiple later)
-# matchup_base <- read.csv(unz("Data/pbp2016reg2.zip","pbp2016reg2.csv"),
-#                         header = F, na.strings = "\\N", stringsAsFactors = F)
+matchup_base <- read.csv(unz("Data/pbp2016reg2.zip","pbp2016reg2.csv"),
+                         header = F, na.strings = "\\N", stringsAsFactors = F)
 
 # Sample PbP file (for faster prototyping)
-matchup_base <- read.csv(gzfile("Data/Sample_PbP.csv.gz"),
-                         na.strings = "NA", stringsAsFactors = F)
+# matchup_base <- read.csv(gzfile("Data/Sample_PbP.csv.gz"),
+#                          na.strings = "NA", stringsAsFactors = F)
 
 names(matchup_base) <- headers
 
@@ -54,44 +54,44 @@ play_code_summary <- group_by(matchup_base,play_code,play_type) %>%
 ###  Assign Possession End Plays ####
 
 has_ball_focus_play_code <- c("drb",
-                         "fg2",
-                         "fg2x",
-                         "fg3",
-                         "fg3x",
-                         "ft",
-                         "ftx",
-                         "orb",
-                         "tov"
-                         )     #These codes indicate focus team has ball
+                              "fg2",
+                              "fg2x",
+                              "fg3",
+                              "fg3x",
+                              "ft",
+                              "ftx",
+                              "orb",
+                              "tov"
+)     #These codes indicate focus team has ball
 
 
 has_ball_focus_play_type <- c("OFFENSIVE_CHARGE_FOUL",
-                             "OFFENSIVE_FOUL"
-                              )   #These types indicate focus team has ball
+                              "OFFENSIVE_FOUL"
+)   #These types indicate focus team has ball
 
 
 has_ball_other_tm_play_type <- c("CLEAR_PATH_FOUL",
-                              "DEF_3_SEC_TECH_FOUL",
-                              "INBOUND_FOUL",
-                              "PERSONAL_BLOCK_FOUL",
-                              "PERSONAL_FOUL",
-                              "PERSONAL_TAKE_FOUL",
-                              "SHOOTING_BLOCK_FOUL",
-                              "SHOOTING_FOUL",
-                              "DEF_GOALTENDING_VIOLATION",
-                              "KICKED_BALL_VIOLATION",
-                              "LANE_VIOLATION"
-                              )   #These types indicate focus team does not have ball
+                                 "DEF_3_SEC_TECH_FOUL",
+                                 "INBOUND_FOUL",
+                                 "PERSONAL_BLOCK_FOUL",
+                                 "PERSONAL_FOUL",
+                                 "PERSONAL_TAKE_FOUL",
+                                 "SHOOTING_BLOCK_FOUL",
+                                 "SHOOTING_FOUL",
+                                 "DEF_GOALTENDING_VIOLATION",
+                                 "KICKED_BALL_VIOLATION",
+                                 "LANE_VIOLATION"
+)   #These types indicate focus team does not have ball
 
 has_ball_next_play_code <- c("jump_ball",
                              "period_start"
-                             )  #  whoever has the ball on next play should have here
+)  #  whoever has the ball on next play should have here
 
 has_ball_prev_play_code <- c("period_end")
-  #  whoever has the ball on previous play should have here
+#  whoever has the ball on previous play should have here
 
 has_ball_next_play_type <- c("JUMP_BALL_VIOLATION")
-  #  whoever has the ball on next play should have here
+#  whoever has the ball on next play should have here
 
 has_ball_prev_play_type <- c("AWAY_FROM_PLAY_FOUL",
                              "FLAGRANT_FOUL_TYPE_1",
@@ -100,7 +100,7 @@ has_ball_prev_play_type <- c("AWAY_FROM_PLAY_FOUL",
                              "TECHNICAL_FOUL",
                              "DELAY_OF_GAME_VIOLATION",
                              "DOUBLE_LANE_VIOLATION"
-                             ) #  whoever has the ball on previous play should have here
+) #  whoever has the ball on previous play should have here
 
 
 # These three sets define who has the ball on almost every play
@@ -116,23 +116,69 @@ matchup_base$has_ball[matchup_base$play_type %in% has_ball_other_tm_play_type] <
 
 
 # These four sets define who has the ball based on who has it
-# on the next or previous play (Iterate 5 times)
+# on the next or previous play (for ambiguous plays) (Iterate 5 times)
 
-for (i in 1:5) {
-matchup_base$has_ball[matchup_base$play_code %in% has_ball_next_play_code] <-
-  matchup_base$has_ball[lag(matchup_base$play_code %in% has_ball_next_play_code, n=1, default = FALSE)]
+has_ball_ambiguous <- function (PbP) {
+  for (i in 1:5) {
+    PbP$has_ball[PbP$play_code %in% has_ball_next_play_code &
+                   is.na(PbP$has_ball)] <-
+      PbP$has_ball[lag(PbP$play_code %in% has_ball_next_play_code &
+                         is.na(PbP$has_ball), n=1, default = FALSE)]
 
-matchup_base$has_ball[matchup_base$play_type %in% has_ball_next_play_type] <-
-  matchup_base$has_ball[lag(matchup_base$play_type %in% has_ball_next_play_type, n=1, default = FALSE)]
+    PbP$has_ball[PbP$play_type %in% has_ball_next_play_type &
+                   is.na(PbP$has_ball)] <-
+      PbP$has_ball[lag(PbP$play_type %in% has_ball_next_play_type &
+                         is.na(PbP$has_ball), n=1, default = FALSE)]
 
-matchup_base$has_ball[matchup_base$play_code %in% has_ball_prev_play_code] <-
-  matchup_base$has_ball[lead(matchup_base$play_code %in% has_ball_prev_play_code, n=1, default = FALSE)]
+    PbP$has_ball[PbP$play_code %in% has_ball_prev_play_code &
+                   is.na(PbP$has_ball)] <-
+      PbP$has_ball[lead(PbP$play_code %in% has_ball_prev_play_code &
+                          is.na(PbP$has_ball), n=1, default = FALSE)]
 
-matchup_base$has_ball[matchup_base$play_type %in% has_ball_prev_play_type] <-
-  matchup_base$has_ball[lead(matchup_base$play_type %in% has_ball_prev_play_type, n=1, default = FALSE)]
+    PbP$has_ball[PbP$play_type %in% has_ball_prev_play_type &
+                   is.na(PbP$has_ball)] <-
+      PbP$has_ball[lead(PbP$play_type %in% has_ball_prev_play_type &
+                          is.na(PbP$has_ball), n=1, default = FALSE)]
+  }
+  return(PbP)
 }
 
-NAs <- matchup_base[is.na(matchup_base$has_ball),]
+matchup_base <- has_ball_ambiguous(matchup_base)
+
+NA_has_ball_1 <- matchup_base[is.na(matchup_base$has_ball),]
+# places where it's difficult to derive who has the ball due to
+# ambiguous play code conflicts (like a jump ball and then end of period with
+# no action in between)
+
+# Reverse the play code algorithm, but do not include begin and end of quarters
+
+has_ball_ambiguous_reverse <- function (PbP){
+
+  # Run this only once, then run the original forward again
+
+  PbP$has_ball[PbP$play_code %in% "jump_ball" & is.na(PbP$has_ball)] <-
+    PbP$has_ball[lead(PbP$play_code %in% "jump_ball" & is.na(PbP$has_ball), n=1, default = FALSE)]
+
+  PbP$has_ball[PbP$play_type %in% has_ball_next_play_type &
+                 is.na(PbP$has_ball)] <-
+    PbP$has_ball[lead(PbP$play_type %in% has_ball_next_play_type &
+                        is.na(PbP$has_ball), n=1, default = FALSE)]
+
+  PbP$has_ball[PbP$play_type %in% has_ball_prev_play_type &
+                 is.na(PbP$has_ball)] <-
+    PbP$has_ball[lag(PbP$play_type %in% has_ball_prev_play_type &
+                       is.na(PbP$has_ball), n=1, default = FALSE)]
+  return(PbP)
+}
+
+matchup_base<- has_ball_ambiguous_reverse(matchup_base)
+# Run in reverse once
+
+matchup_base <- has_ball_ambiguous(matchup_base)
+# Run forward 5 times again
+
+NA_has_ball_2 <- matchup_base[is.na(matchup_base$has_ball),]  # Are NAs all gone?
+# Anything left should be a data source error--stray NAs for play codes
 
 
 
