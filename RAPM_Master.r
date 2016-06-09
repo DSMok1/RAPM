@@ -51,7 +51,7 @@ play_code_summary <- group_by(matchup_base,play_code,play_type) %>%
     number = length(play_id)
   )
 
-###  Assign Possession End Plays ####
+###  Determine which team has the ball ####
 
 has_ball_focus_play_code <- c("drb",
                               "fg2",
@@ -66,6 +66,7 @@ has_ball_focus_play_code <- c("drb",
 
 
 has_ball_focus_play_type <- c("OFFENSIVE_CHARGE_FOUL",
+                              "SHOOTING_FOUL",
                               "OFFENSIVE_FOUL"
 )   #These types indicate focus team has ball
 
@@ -77,7 +78,6 @@ has_ball_other_tm_play_type <- c("CLEAR_PATH_FOUL",
                                  "PERSONAL_FOUL",
                                  "PERSONAL_TAKE_FOUL",
                                  "SHOOTING_BLOCK_FOUL",
-                                 "SHOOTING_FOUL",
                                  "DEF_GOALTENDING_VIOLATION",
                                  "KICKED_BALL_VIOLATION",
                                  "LANE_VIOLATION"
@@ -104,6 +104,8 @@ has_ball_prev_play_type <- c("AWAY_FROM_PLAY_FOUL",
 
 
 # These three sets define who has the ball on almost every play
+
+matchup_base$has_ball <- NA
 
 matchup_base$has_ball[matchup_base$play_code %in% has_ball_focus_play_code] <-
   matchup_base$focus_team_id[matchup_base$play_code %in% has_ball_focus_play_code]
@@ -180,6 +182,21 @@ matchup_base <- has_ball_ambiguous(matchup_base)
 NA_has_ball_2 <- matchup_base[is.na(matchup_base$has_ball),]  # Are NAs all gone?
 # Anything left should be a data source error--stray NAs for play codes
 
+
+###  Possession IDs ####
+
+# Whenever the ball changes possesion, or there's the beginning of a new period,
+# increase the possession ID
+
+matchup_base$new_poss <- FALSE
+
+matchup_base$new_poss[matchup_base$play_code %in% "period_start"] <- TRUE
+
+matchup_base$new_poss[!(matchup_base$has_ball ==
+                        lag(matchup_base$has_ball,n=1,default="X"))] <- TRUE
+
+
+matchup_base %<>% group_by(game_id) %>% mutate(poss_id = cumsum(new_poss)) %>% ungroup()
 
 
 ###  Overall Game Data ####
