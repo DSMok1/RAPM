@@ -199,6 +199,25 @@ matchup_base$new_poss[!(matchup_base$has_ball ==
 matchup_base %<>% group_by(game_id) %>% mutate(poss_id = cumsum(new_poss)) %>% ungroup()
 
 
+# To get a dump of the current status
+# write.csv(
+#   matchup_base,file = gzfile(
+#     "Output/junk_dump.csv.gz"
+#   ), row.names = FALSE
+# )
+
+###  Possession Summaries ####
+
+fgas <- c("fg2","fg2x","fg3","fg3x")
+
+poss_results <- matchup_base %>% group_by(game_id,poss_id)  %>%
+  summarise(poss_pts = sum(play_pts),
+            poss_time = sum(time_elapsed_play),
+            poss_plays = length(play_pts),
+            poss_fga = sum(play_code %in% fgas),
+            poss_orb = sum(play_code %in% "orb"))
+
+
 ###  Overall Game Data ####
 
 # Assign win probability as 1, 0, or 0.5 (if it went to overtime)
@@ -210,6 +229,7 @@ game_data <- group_by(matchup_base,game_id) %>%
     home_team_id = first(home_team_id),
     max_time = max(time_elapsed_game),
     minutes = max_time/600,
+    possessions = max(poss_id),
     quarters = max(quarter),
     visitor_final_score = max(visitor_score),
     home_final_score = max(home_score),
